@@ -1,0 +1,26 @@
+{
+	"name": "fastify-test",
+	"version": "1.0.0",
+	"description": "",
+	"main": "index.js",
+	"scripts": {
+		"build": "tsc -p tsconfig.json",
+		"start": "node src/index.ts",
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"dependencies": {
+		"dotenv": "^16.0.3",
+		"fastify": "^4.17.0",
+		"knex": "^2.4.2",
+		"pg": "^8.10.0",
+		"ts-node": "^10.9.1"
+	},
+	"devDependencies": {
+		"@types/node": "^20.0.0",
+		"pino-pretty": "^10.0.0",
+		"typescript": "^5.0.4"
+	}
+}
