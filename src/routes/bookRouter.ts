@@ -30,15 +30,15 @@ const bookRoutes: FastifyPluginCallback = (fastify, opts, done) => {
 		schema: {
 			body: {
 				type: 'object',
-				required: ['title', 'author_id', 'release', 'description'],
+				required: ['title', 'release', 'description'],
 				properties: {
 					title: { type: 'string' },
-					author_id: { type: 'number' },
 					release: { type: 'string' },
 					description: { type: 'string' }
 				}
 			}
-		}
+		},
+		preHandler: [fastify.auth]
 	}, bookController.insertBook);
 
 	fastify.delete<
@@ -51,7 +51,8 @@ const bookRoutes: FastifyPluginCallback = (fastify, opts, done) => {
 					id: { type: 'number' }
 				}
 			}
-		}
+		},
+		preHandler: [fastify.auth]
 	}, bookController.deleteBookById);
 
 	fastify.put<
@@ -71,7 +72,8 @@ const bookRoutes: FastifyPluginCallback = (fastify, opts, done) => {
 					description: { type: 'string' }
 				}
 			}
-		}
+		},
+		preHandler: [fastify.auth]
 	}, bookController.updateBook);
 
 	done();

@@ -1,6 +1,14 @@
 import { FastifyReply, FastifyRequest } from 'fastify';
 import { DeleteBookParams, InsertBookBody, UpdateBook } from '../routes/bookRouter';
 
+interface DecodedData {
+	id: number,
+	fullname: string,
+	dob: string,
+	country: string,
+	login: string
+}
+
 const db = require('../config/database');
 
 async function getAllBooks(request: FastifyRequest, reply: FastifyReply) {
@@ -28,10 +36,12 @@ async function insertBook(
 	request: FastifyRequest<{ Body: InsertBookBody }>,
 	reply: FastifyReply
 ) {
-	const { title, author_id, release, description } = request.body;
+	const { title, release, description } = request.body;
+
+	const { id } = await request.jwtVerify() as DecodedData;
 
 	try {
-		await db.insert({ title, author_id, release, description }).into('book');
+		await db.insert({ title, release, author_id: id, description }).into('book');
 
 		reply.code(201).send({
 			meta: {

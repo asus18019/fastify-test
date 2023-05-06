@@ -9,6 +9,11 @@ export interface InsertUserBody {
 	dob: string,
 }
 
+export interface LoginBody {
+	login: string,
+	password: string
+}
+
 const userRouter: FastifyPluginCallback = (fastify, opts, done) => {
 	fastify.post<
 		{ Body: InsertUserBody }
@@ -17,7 +22,6 @@ const userRouter: FastifyPluginCallback = (fastify, opts, done) => {
 			body: {
 				type: 'object',
 				required: ['login', 'password', 'fullname', 'country', 'dob'],
-				additionalProperties: false,
 				properties: {
 					login: { type: 'string' },
 					password: { type: 'string' },
@@ -29,7 +33,22 @@ const userRouter: FastifyPluginCallback = (fastify, opts, done) => {
 		}
 	}, userController.insertUser);
 
+	fastify.post<
+		{ Body: LoginBody }
+	>('/login', {
+		schema: {
+			body: {
+				type: 'object',
+				required: ['login', 'password'],
+				properties: {
+					login: { type: 'string' },
+					password: { type: 'string' },
+				}
+			}
+		}
+	}, userController.login);
+
 	done();
-}
+};
 
 module.exports = userRouter;

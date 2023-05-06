@@ -1,9 +1,28 @@
-import fastify from 'fastify';
+import fastify, { FastifyReply, FastifyRequest } from 'fastify';
+import fastifyJwt from '@fastify/jwt';
 const logger = require('./config/logger');
 const bookRoutes = require('./routes/bookRouter');
 const userRoutes = require('./routes/userRouter');
 
-const server = fastify({ logger });
+export const server = fastify({ logger });
+
+server.register(fastifyJwt, {
+	secret: "asdu8hg43ujgjntngjinjg45g9349"
+})
+
+declare module 'fastify' {
+	interface FastifyInstance {
+		auth(request: FastifyRequest, reply: FastifyReply, done: () => void): void;
+	}
+}
+
+server.decorate('auth', async (request: FastifyRequest, reply: FastifyReply, done: () => void) => {
+	try {
+		await request.jwtVerify();
+	} catch(e) {
+		reply.code(403).send('You do not have access to this resource');
+	}
+});
 
 server.register(bookRoutes);
 server.register(userRoutes);

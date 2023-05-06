@@ -1,6 +1,7 @@
 import { FastifyReply, FastifyRequest } from 'fastify';
-import { InsertUserBody } from '../routes/userRouter';
-import { hashPassword } from '../utils/hash';
+import { InsertUserBody, LoginBody } from '../routes/userRouter';
+import { server } from '../index';
+import { hashPassword, verifyPassword } from '../utils/hash';
 
 const db = require('../config/database');
 
@@ -32,6 +33,51 @@ async function insertUser(
 	}
 }
 
+async function login(
+	request: FastifyRequest<{ Body: LoginBody }>,
+	reply: FastifyReply
+) {
+	const { login, password } = request.body;
+
+	const user = await db.first("*").into("user").where('login', login);
+
+	if(!user) {
+		reply.code(400).send({
+			meta: {
+				code: 400,
+				message: `Invalid login or password`
+			}
+		});
+	}
+
+	const correctPassword = verifyPassword({
+		password,
+		salt: user.salt,
+		hash: user.password
+	});
+
+	if(correctPassword) {
+		const { password, salt, ...rest } = user;
+		reply.code(200).send({
+			meta: {
+				code: 200,
+				message: `Authenticated`
+			},
+			data: {
+				accessToken: server.jwt.sign(rest)
+			}
+		});
+	}
+
+	reply.code(400).send({
+		meta: {
+			code: 400,
+			message: `Invalid login or password`
+		}
+	});
+}
+
 module.exports = {
-	insertUser
+	insertUser,
+	login
 };
