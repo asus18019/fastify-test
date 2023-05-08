@@ -1,5 +1,5 @@
 import { FastifyReply, FastifyRequest } from 'fastify';
-import { DeleteBookParams, InsertBookBody, UpdateBook } from '../routes/bookRouter';
+import { DeleteBookParams, InsertBookBody, UpdateBook } from './router';
 
 interface DecodedData {
 	id: number,
@@ -9,7 +9,7 @@ interface DecodedData {
 	login: string
 }
 
-const db = require('../config/database');
+const db = require('../../config/database');
 
 async function getAllBooks(request: FastifyRequest, reply: FastifyReply) {
 	try {
@@ -102,7 +102,11 @@ async function updateBook(
 	const bookId = request.body.id;
 
 	try {
-		await db('book').where('id', bookId).update(request.body);
+		const res = await db('book').where('id', bookId).update(request.body);
+
+		if(!res) {
+			throw new Error('Book bot found');
+		}
 
 		reply.code(200).send({
 			meta: {
@@ -110,12 +114,14 @@ async function updateBook(
 				message: `Updated`
 			}
 		});
-	} catch(error) {
+	} catch(e: unknown) {
+		const error = e as Error;
 		console.log(error);
+
 		reply.code(400).send({
 			meta: {
 				code: 400,
-				error
+				message: error.message
 			}
 		});
 	}

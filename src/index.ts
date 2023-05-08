@@ -1,8 +1,8 @@
 import fastify, { FastifyReply, FastifyRequest } from 'fastify';
 import fastifyJwt from '@fastify/jwt';
 const logger = require('./config/logger');
-const bookRoutes = require('./routes/bookRouter');
-const userRoutes = require('./routes/userRouter');
+const bookRoutes = require('./api/book/router');
+const userRoutes = require('./api/user/router');
 
 export const server = fastify({ logger });
 

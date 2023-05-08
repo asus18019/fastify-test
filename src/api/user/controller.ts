@@ -1,9 +1,9 @@
 import { FastifyReply, FastifyRequest } from 'fastify';
-import { InsertUserBody, LoginBody } from '../routes/userRouter';
-import { server } from '../index';
-import { hashPassword, verifyPassword } from '../utils/hash';
+import { InsertUserBody, LoginBody } from './router';
+import { server } from '../../index';
+import { hashPassword, verifyPassword } from '../../utils/hash';
 
-const db = require('../config/database');
+const db = require('../../config/database');
 
 async function insertUser(
 	request: FastifyRequest<{ Body: InsertUserBody }>,
