@@ -1,4 +1,5 @@
 import { FastifyReply, FastifyRequest } from 'fastify';
+import { PrismaClient } from '@prisma/client';
 import { DeleteBookParams, InsertBookBody, UpdateBook } from './router';
 
 interface DecodedData {
@@ -9,11 +10,11 @@ interface DecodedData {
 	login: string
 }
 
-const db = require('../../config/database');
+const prisma = new PrismaClient();
 
 async function getAllBooks(request: FastifyRequest, reply: FastifyReply) {
 	try {
-		const response = await db.select('*').into('book');
+		const response = await prisma.book.findMany();
 
 		reply.code(200).send({
 			meta: {
@@ -41,7 +42,14 @@ async function insertBook(
 	const { id } = await request.jwtVerify() as DecodedData;
 
 	try {
-		await db.insert({ title, release, author_id: id, description }).into('book');
+		await prisma.book.create({
+			data: {
+				title,
+				release: new Date(release),
+				author_id: id,
+				description
+			}
+		});
 
 		reply.code(201).send({
 			meta: {
@@ -67,29 +75,25 @@ async function deleteBookById(
 	const bookId = request.params.id;
 
 	try {
-		const rowsDeleted = await db('book').where('id', bookId).delete();
+		await prisma.book.delete({
+			where: {
+				id: bookId
+			}
+		});
 
-		if(rowsDeleted === 0) {
-			reply.code(404).send({
-				meta: {
-					code: 404,
-					message: `Book not found`
-				}
-			});
-		} else {
-			reply.code(200).send({
-				meta: {
-					code: 200,
-					message: `Deleted`
-				}
-			});
-		}
-	} catch(error) {
-		console.log(error);
+		reply.code(200).send({
+			meta: {
+				code: 200,
+				message: `Deleted`
+			}
+		});
+	} catch(e) {
+		console.log(e);
+		const error = e as any;
 		reply.code(400).send({
 			meta: {
 				code: 400,
-				message: `Something went wrong`
+				message: error?.meta?.cause || e
 			}
 		});
 	}
@@ -102,11 +106,12 @@ async function updateBook(
 	const bookId = request.body.id;
 
 	try {
-		const res = await db('book').where('id', bookId).update(request.body);
-
-		if(!res) {
-			throw new Error('Book bot found');
-		}
+		await prisma.book.update({
+			where: {
+				id: bookId
+			},
+			data: request.body
+		});
 
 		reply.code(200).send({
 			meta: {
@@ -115,13 +120,13 @@ async function updateBook(
 			}
 		});
 	} catch(e: unknown) {
-		const error = e as Error;
+		const error = e as any;
 		console.log(error);
 
 		reply.code(400).send({
 			meta: {
 				code: 400,
-				message: error.message
+				message: error?.meta?.cause || e
 			}
 		});
 	}

@@ -28,6 +28,12 @@ export const insertUserSchemas: FastifySchema = {
 			properties: {
 				...metaSchema
 			}
+		},
+		409: {
+			type: 'object',
+			properties: {
+				...metaSchema
+			}
 		}
 	}
 };
@@ -45,7 +51,10 @@ export const authorizeUserSchemas: FastifySchema = {
 		200: {
 			type: 'object',
 			properties: {
-				...metaSchema
+				...metaSchema,
+				data: {
+					accessToken: { type: 'string' }
+				}
 			}
 		}
 	}
