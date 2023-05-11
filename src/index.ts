@@ -3,9 +3,14 @@ import fastifyJwt from '@fastify/jwt';
 const logger = require('./config/logger');
 const bookRoutes = require('./api/book/router');
 const userRoutes = require('./api/user/router');
+const multer = require('fastify-multer');
+import cloudinary from 'fastify-cloudinary';
 
 export const server = fastify({ logger });
 
+
+server.register(multer.contentParser, { });
+server.register(cloudinary, { url: process.env.CLOUDINARY_URL });
 server.register(fastifyJwt, {
 	secret: "asdu8hg43ujgjntngjinjg45g9349"
 })

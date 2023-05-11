@@ -17,12 +17,13 @@ model book {
 }
 
 model user {
-  id       Int      @id(map: "id") @default(autoincrement())
-  fullname String
-  dob      DateTime @db.Date
-  country  String
-  login    String   @unique
-  password String
-  salt     String
-  book     book[]
+  id        Int      @id(map: "id") @default(autoincrement())
+  fullname  String
+  dob       DateTime @db.Date
+  country   String
+  login     String   @unique
+  password  String
+  salt      String
+  image_url String?
+  book      book[]
 }
