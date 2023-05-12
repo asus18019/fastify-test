@@ -2,7 +2,7 @@ import { FastifyReply, FastifyRequest } from 'fastify';
 import { PrismaClient } from '@prisma/client';
 import { DeleteBookParams, InsertBookBody, UpdateBook } from './router';
 
-interface DecodedData {
+export interface DecodedData {
 	id: number,
 	fullname: string,
 	dob: string,

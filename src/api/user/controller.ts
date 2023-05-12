@@ -7,6 +7,7 @@ import Ajv from 'ajv';
 import { insertUserSchemas } from './schema';
 import { uploadToCloudinary } from '../../utils/uploadToCloudinary';
 import { UploadApiResponse } from 'cloudinary';
+import { DecodedData } from '../book/controller';
 
 const prisma = new PrismaClient();
 
@@ -105,6 +106,38 @@ async function insertUser(
 	}
 }
 
+async function getMe(
+	request: FastifyRequest,
+	reply: FastifyReply
+) {
+	try {
+		const { id } = await request.jwtVerify() as DecodedData;
+		const user = await prisma.user.findUnique({
+			where: {
+				id
+			},
+			include: {
+				assets: true
+			}
+		})
+
+		reply.code(200).send({
+			meta: {
+				code: 200,
+				message: `Sucessfully fetched`
+			},
+			data: user
+		})
+	} catch(e) {
+		reply.code(400).send({
+			meta: {
+				code: 400,
+				message: `Something went wrong`
+			}
+		});
+	}
+}
+
 async function login(
 	request: FastifyRequest<{ Body: LoginBody }>,
 	reply: FastifyReply
@@ -155,5 +188,6 @@ async function login(
 
 module.exports = {
 	insertUser,
-	login
+	login,
+	getMe
 };

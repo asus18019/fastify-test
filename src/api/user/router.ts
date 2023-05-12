@@ -1,5 +1,5 @@
 import { FastifyPluginCallback } from 'fastify';
-import { authorizeUserSchemas } from './schema';
+import { authorizeUserSchemas, getMeSchemas } from './schema';
 import multer from 'fastify-multer';
 
 const userController = require('./controller');
@@ -26,6 +26,12 @@ const router: FastifyPluginCallback = (fastify, opts, done) => {
 		'/user',
 		{ preHandler: upload.single('image') },
 		userController.insertUser
+	);
+
+	fastify.get(
+		'/me',
+		{ preHandler: [fastify.auth], schema: getMeSchemas },
+		userController.getMe
 	);
 
 	fastify.post<
