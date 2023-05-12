@@ -6,6 +6,7 @@ import { PrismaClient } from '@prisma/client';
 import Ajv from 'ajv';
 import { insertUserSchemas } from './schema';
 import { uploadToCloudinary } from '../../utils/uploadToCloudinary';
+import { UploadApiResponse } from 'cloudinary';
 
 const prisma = new PrismaClient();
 
@@ -48,7 +49,7 @@ async function insertUser(
 
 	const { hash, salt } = hashPassword(password);
 
-	let image_url: string | undefined;
+	let asset: UploadApiResponse | undefined;
 
 	if(typeof image === 'object') {
 		const supportedImageExtensions = ['jpeg', 'png'];
@@ -61,11 +62,20 @@ async function insertUser(
 			});
 		}
 
-		const result = await uploadToCloudinary(image);
-		image_url = result.url;
+		asset = await uploadToCloudinary(image);
 	}
 
 	try {
+		let asset_id: number | undefined;
+
+		if(asset) {
+			delete asset["api_key"];
+			const res = await prisma.assets.create({
+				data: asset
+			});
+			asset_id = res.id;
+		}
+
 		await prisma.user.create({
 			data: {
 				login,
@@ -74,7 +84,7 @@ async function insertUser(
 				fullname,
 				country,
 				dob: new Date(dob),
-				image_url
+				image_id: asset_id
 			}
 		});
 

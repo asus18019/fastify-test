@@ -17,13 +17,38 @@ model book {
 }
 
 model user {
-  id        Int      @id(map: "id") @default(autoincrement())
-  fullname  String
-  dob       DateTime @db.Date
-  country   String
-  login     String   @unique
-  password  String
-  salt      String
-  image_url String?
-  book      book[]
+  id       Int      @id(map: "id") @default(autoincrement())
+  fullname String
+  dob      DateTime @db.Date
+  country  String
+  login    String   @unique
+  password String
+  salt     String
+  image_id Int?     @unique
+  book     book[]
+  assets   assets?  @relation(fields: [image_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "user_assets_id_fk")
+}
+
+model assets {
+  asset_id          String?   @db.VarChar(255)
+  public_id         String?   @db.VarChar(255)
+  version           Int?
+  version_id        String?   @db.VarChar(255)
+  signature         String?   @db.VarChar(255)
+  width             Int?
+  height            Int?
+  format            String?   @db.VarChar(255)
+  resource_type     String?   @db.VarChar(255)
+  created_at        DateTime? @db.Timestamp(6)
+  tags              String[]
+  bytes             Int?
+  type              String?   @db.VarChar(255)
+  etag              String?   @db.VarChar(255)
+  placeholder       Boolean?
+  url               String?
+  secure_url        String?
+  folder            String?   @db.VarChar(255)
+  original_filename String?   @db.VarChar(255)
+  id                Int       @id @unique @default(autoincrement())
+  user              user?
 }
