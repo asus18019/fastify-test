@@ -12,6 +12,8 @@ export interface InsertUserBody {
 	dob: string,
 }
 
+export interface UpdateUserBody extends Partial<InsertUserBody> {}
+
 export interface LoginBody {
 	login: string,
 	password: string
@@ -28,6 +30,14 @@ const router: FastifyPluginCallback = (fastify, opts, done) => {
 		userController.insertUser
 	);
 
+	fastify.post<
+		{ Body: LoginBody }
+	>(
+		'/login',
+		{ schema: authorizeUserSchemas },
+		userController.login
+	);
+
 	fastify.get(
 		'/me',
 		{ preHandler: [fastify.auth], schema: getMeSchemas },
@@ -35,11 +45,11 @@ const router: FastifyPluginCallback = (fastify, opts, done) => {
 	);
 
 	fastify.post<
-		{ Body: LoginBody }
+		{ Body: UpdateUserBody }
 	>(
-		'/login',
-		{ schema: authorizeUserSchemas },
-		userController.login
+		'/me',
+		{ preHandler: [upload.single('image'), fastify.auth] },
+		userController.updateMe
 	);
 
 	done();

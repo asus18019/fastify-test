@@ -1,22 +1,26 @@
 import { FastifyReply, FastifyRequest } from 'fastify';
-import { InsertUserBody, LoginBody } from './router';
+import { InsertUserBody, LoginBody, UpdateUserBody } from './router';
 import { server } from '../../index';
 import { hashPassword, verifyPassword } from '../../utils/hash';
-import { PrismaClient } from '@prisma/client';
+import { assets, PrismaClient } from '@prisma/client';
 import Ajv from 'ajv';
-import { insertUserSchemas } from './schema';
-import { uploadToCloudinary } from '../../utils/uploadToCloudinary';
+import { insertUserSchemas, updateMeSchemas } from './schema';
+import { deleteFromCloudinary, uploadToCloudinary } from '../../utils/cloudinary';
 import { UploadApiResponse } from 'cloudinary';
 import { DecodedData } from '../book/controller';
 
 const prisma = new PrismaClient();
 
-interface MulterRequest extends FastifyRequest<{ Body: InsertUserBody }> {
-	file?: Express.Multer.File
+interface InsertUserMulterReq extends FastifyRequest<{ Body: InsertUserBody }> {
+	file?: Express.Multer.File;
+}
+
+interface UpdateMeMulterReq extends FastifyRequest<{ Body: UpdateUserBody }> {
+	file?: Express.Multer.File;
 }
 
 async function insertUser(
-	request: MulterRequest,
+	request: InsertUserMulterReq,
 	reply: FastifyReply
 ) {
 	const ajv = new Ajv({ allErrors: true });
@@ -70,7 +74,7 @@ async function insertUser(
 		let asset_id: number | undefined;
 
 		if(asset) {
-			delete asset["api_key"];
+			delete asset['api_key'];
 			const res = await prisma.assets.create({
 				data: asset
 			});
@@ -119,15 +123,15 @@ async function getMe(
 			include: {
 				assets: true
 			}
-		})
+		});
 
 		reply.code(200).send({
 			meta: {
 				code: 200,
-				message: `Sucessfully fetched`
+				message: `Successfully fetched`
 			},
 			data: user
-		})
+		});
 	} catch(e) {
 		reply.code(400).send({
 			meta: {
@@ -136,6 +140,90 @@ async function getMe(
 			}
 		});
 	}
+}
+
+async function updateMe(
+	request: UpdateMeMulterReq,
+	reply: FastifyReply
+) {
+	const ajv = new Ajv({ allErrors: true });
+	const validate = ajv.compile(updateMeSchemas.body as any);
+	const isValid = validate(request.body);
+
+	if(!isValid) {
+		const errorMessage = validate.errors?.length && validate.errors[0].message;
+		return reply.status(400).send({
+			message: 'Invalid form data', errorMessage
+		});
+	}
+
+	const image: Express.Multer.File | undefined = await request.file;
+
+	let asset: UploadApiResponse | undefined;
+
+	if(typeof image === 'object') {
+		const supportedImageExtensions = ['jpeg', 'png'];
+		const isValidFileExtension = supportedImageExtensions.map(e => 'image/' + e).includes(image.mimetype);
+
+		if(!isValidFileExtension) {
+			const formatterExtensions = supportedImageExtensions.map(e => '.' + e.toUpperCase()).join(', ');
+			return reply.code(400).send({
+				message: `Incorrect file extension. Supported file extensions: ${ formatterExtensions }`
+			});
+		}
+
+		asset = await uploadToCloudinary(image);
+		delete asset["api_key"];
+	}
+
+	const { id } = await request.jwtVerify() as DecodedData;
+	const { login, password, fullname, country, dob } = request.body;
+
+	const userToDelete = await prisma.user.findUniqueOrThrow({
+		where: {
+			id
+		}
+	});
+
+	let createAssetRes: assets | undefined;
+
+	if(asset) {
+		createAssetRes = await prisma.assets.create({
+			data: asset
+		});
+	}
+
+	const updateRes = await prisma.user.update({
+		data: {
+			login,
+			fullname,
+			country,
+			dob,
+			...(createAssetRes && { image_id: createAssetRes.id })
+		},
+		where: {
+			id
+		}
+	});
+
+	if(asset && userToDelete.image_id) {
+		const { public_id } = await prisma.assets.delete({
+			where: {
+				id: userToDelete.image_id
+			}
+		});
+
+		if(!public_id) throw Error("An error happened. Public_id is not provided")
+		await deleteFromCloudinary(public_id);
+	}
+
+	reply.code(200).send({
+		meta: {
+			code: 202,
+			message: `Updated`,
+			updateRes
+		}
+	});
 }
 
 async function login(
@@ -189,5 +277,6 @@ async function login(
 module.exports = {
 	insertUser,
 	login,
-	getMe
+	getMe,
+	updateMe
 };

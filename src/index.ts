@@ -9,11 +9,9 @@ import cloudinary from 'fastify-cloudinary';
 export const server = fastify({ logger });
 
 
-server.register(multer.contentParser, { });
+server.register(multer.contentParser);
 server.register(cloudinary, { url: process.env.CLOUDINARY_URL });
-server.register(fastifyJwt, {
-	secret: "asdu8hg43ujgjntngjinjg45g9349"
-})
+server.register(fastifyJwt, { secret: "asdu8hg43ujgjntngjinjg45g9349" })
 
 declare module 'fastify' {
 	interface FastifyInstance {

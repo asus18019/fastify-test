@@ -69,6 +69,19 @@ export const getMeSchemas: FastifySchema = {
 	}
 };
 
+export const updateMeSchemas: FastifySchema = {
+	body: {
+		type: 'object',
+		properties: {
+			login: { type: 'string' },
+			password: { type: 'string' },
+			fullname: { type: 'string' },
+			country: { type: 'string' },
+			dob: { type: 'string' }
+		}
+	}
+};
+
 export const authorizeUserSchemas: FastifySchema = {
 	body: {
 		type: 'object',
