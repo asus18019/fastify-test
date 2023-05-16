@@ -3,11 +3,10 @@ import { InsertUserBody, LoginBody, UpdateUserBody } from './router';
 import { server } from '../../index';
 import { hashPassword, verifyPassword } from '../../utils/hash';
 import { assets, PrismaClient } from '@prisma/client';
-import Ajv from 'ajv';
 import { insertUserSchemas, updateMeSchemas } from './schema';
 import { deleteFromCloudinary, uploadToCloudinary } from '../../utils/cloudinary';
-import { UploadApiResponse } from 'cloudinary';
 import { DecodedData } from '../book/controller';
+import { validateBody, validateFileExtension } from '../../utils/validators';
 
 const prisma = new PrismaClient();
 
@@ -23,14 +22,11 @@ async function insertUser(
 	request: InsertUserMulterReq,
 	reply: FastifyReply
 ) {
-	const ajv = new Ajv({ allErrors: true });
-	const validate = ajv.compile(insertUserSchemas.body as any);
-	const isValid = validate(request.body);
-
-	if(!isValid) {
-		const errorMessage = validate.errors?.length && validate.errors[0].message;
+	try {
+		validateBody(insertUserSchemas.body, request.body);
+	} catch(e) {
 		return reply.status(400).send({
-			message: 'Invalid form data', errorMessage
+			message: `Invalid form data. ${ (e as Error).message }`
 		});
 	}
 
@@ -44,7 +40,7 @@ async function insertUser(
 	});
 
 	if(user) {
-		reply.code(409).send({
+		return reply.code(409).send({
 			meta: {
 				code: 409,
 				message: `This login has already been taken`
@@ -54,33 +50,28 @@ async function insertUser(
 
 	const { hash, salt } = hashPassword(password);
 
-	let asset: UploadApiResponse | undefined;
+	let asset_id: number | undefined;
 
-	if(typeof image === 'object') {
-		const supportedImageExtensions = ['jpeg', 'png'];
-		const isValidFileExtension = supportedImageExtensions.map(e => 'image/' + e).includes(image.mimetype);
-
-		if(!isValidFileExtension) {
-			const formatterExtensions = supportedImageExtensions.map(e => '.' + e.toUpperCase()).join(', ');
+	if(image) {
+		try {
+			const supportedImageExtensions = ['jpeg', 'png'];
+			validateFileExtension(image, supportedImageExtensions);
+		} catch(e) {
 			return reply.code(400).send({
-				message: `Incorrect file extension. Supported file extensions: ${ formatterExtensions }`
+				message: (e as Error).message
 			});
 		}
 
-		asset = await uploadToCloudinary(image);
+		const { api_key, ...asset } = await uploadToCloudinary(image);
+
+		const res = await prisma.assets.create({
+			data: asset
+		});
+
+		asset_id = res.id;
 	}
 
 	try {
-		let asset_id: number | undefined;
-
-		if(asset) {
-			delete asset['api_key'];
-			const res = await prisma.assets.create({
-				data: asset
-			});
-			asset_id = res.id;
-		}
-
 		await prisma.user.create({
 			data: {
 				login,
@@ -146,59 +137,50 @@ async function updateMe(
 	request: UpdateMeMulterReq,
 	reply: FastifyReply
 ) {
-	const ajv = new Ajv({ allErrors: true });
-	const validate = ajv.compile(updateMeSchemas.body as any);
-	const isValid = validate(request.body);
-
-	if(!isValid) {
-		const errorMessage = validate.errors?.length && validate.errors[0].message;
+	try {
+		validateBody(updateMeSchemas.body, request.body);
+	} catch(e) {
 		return reply.status(400).send({
-			message: 'Invalid form data', errorMessage
+			message: `Invalid form data. ${ (e as Error).message }`
 		});
 	}
 
 	const image: Express.Multer.File | undefined = await request.file;
 
-	let asset: UploadApiResponse | undefined;
+	let createAssetRes: assets | undefined;
 
-	if(typeof image === 'object') {
-		const supportedImageExtensions = ['jpeg', 'png'];
-		const isValidFileExtension = supportedImageExtensions.map(e => 'image/' + e).includes(image.mimetype);
+	if(image) {
+		try {
+			const supportedImageExtensions = ['jpeg', 'png'];
+			validateFileExtension(image, supportedImageExtensions);
 
-		if(!isValidFileExtension) {
-			const formatterExtensions = supportedImageExtensions.map(e => '.' + e.toUpperCase()).join(', ');
+			const { api_key, ...asset } = await uploadToCloudinary(image);
+
+			createAssetRes = await prisma.assets.create({
+				data: asset
+			});
+		} catch(e) {
 			return reply.code(400).send({
-				message: `Incorrect file extension. Supported file extensions: ${ formatterExtensions }`
+				message: (e as Error).message
 			});
 		}
-
-		asset = await uploadToCloudinary(image);
-		delete asset["api_key"];
 	}
 
 	const { id } = await request.jwtVerify() as DecodedData;
 	const { login, password, fullname, country, dob } = request.body;
 
-	const userToDelete = await prisma.user.findUniqueOrThrow({
+	const userToUpdate = await prisma.user.findUniqueOrThrow({
 		where: {
 			id
 		}
 	});
-
-	let createAssetRes: assets | undefined;
-
-	if(asset) {
-		createAssetRes = await prisma.assets.create({
-			data: asset
-		});
-	}
 
 	const updateRes = await prisma.user.update({
 		data: {
 			login,
 			fullname,
 			country,
-			dob,
+			...(dob && { dob: new Date(dob) }),
 			...(createAssetRes && { image_id: createAssetRes.id })
 		},
 		where: {
@@ -206,14 +188,14 @@ async function updateMe(
 		}
 	});
 
-	if(asset && userToDelete.image_id) {
+	if(createAssetRes && userToUpdate.image_id) {
 		const { public_id } = await prisma.assets.delete({
 			where: {
-				id: userToDelete.image_id
+				id: userToUpdate.image_id
 			}
 		});
 
-		if(!public_id) throw Error("An error happened. Public_id is not provided")
+		if(!public_id) throw Error('An error happened. Public_id is not provided');
 		await deleteFromCloudinary(public_id);
 	}
 

@@ -44,7 +44,7 @@ const router: FastifyPluginCallback = (fastify, opts, done) => {
 		userController.getMe
 	);
 
-	fastify.post<
+	fastify.put<
 		{ Body: UpdateUserBody }
 	>(
 		'/me',
