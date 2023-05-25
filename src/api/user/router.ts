@@ -52,6 +52,12 @@ const router: FastifyPluginCallback = (fastify, opts, done) => {
 		userController.updateMe
 	);
 
+	fastify.delete(
+		'/me/image',
+		{ preHandler: [fastify.auth] },
+		userController.deleteMyImage
+	);
+
 	done();
 };
 

@@ -194,6 +194,53 @@ async function updateMe(
 	});
 }
 
+async function deleteMyImage(
+	request: FastifyRequest,
+	reply: FastifyReply
+) {
+	const { id } = await request.jwtVerify() as DecodedData;
+
+	try {
+		const { image_id } = await prisma.user.findFirstOrThrow({
+			where: {
+				id
+			}
+		});
+
+		if(!image_id) {
+			return new Error(`You don't have an image`);
+		}
+
+		await prisma.user.update({
+			data: {
+				image_id: null
+			},
+			where: {
+				id
+			}
+		});
+
+		const { public_id } = await prisma.assets.delete({
+			where: {
+				id: image_id
+			}
+		});
+
+		if(!public_id) return new Error('An error happened. Public_id is not provided');
+
+		await deleteFromCloudinary(public_id);
+
+		return reply.code(200).send({
+			message: 'Your image has been deleted'
+		});
+	} catch(e) {
+		console.log(e);
+		return reply.code(400).send({
+			message: (e as Error).message
+		})
+	}
+}
+
 async function login(
 	request: FastifyRequest<{ Body: LoginBody }>,
 	reply: FastifyReply
@@ -237,5 +284,6 @@ module.exports = {
 	insertUser,
 	login,
 	getMe,
-	updateMe
+	updateMe,
+	deleteMyImage
 };
