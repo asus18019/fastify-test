@@ -41,10 +41,7 @@ async function insertUser(
 
 	if(user) {
 		return reply.code(409).send({
-			meta: {
-				code: 409,
-				message: `This login has already been taken`
-			}
+			message: `This login has already been taken`
 		});
 	}
 
@@ -72,7 +69,7 @@ async function insertUser(
 	}
 
 	try {
-		await prisma.user.create({
+		const newUser = await prisma.user.create({
 			data: {
 				login,
 				password: hash,
@@ -85,18 +82,13 @@ async function insertUser(
 		});
 
 		reply.code(201).send({
-			meta: {
-				code: 201,
-				message: `Created`
-			}
+			message: `Created`,
+			data: newUser
 		});
 	} catch(error) {
 		console.log(error);
 		reply.code(400).send({
-			meta: {
-				code: 400,
-				message: `Something went wrong`
-			}
+			message: `Something went wrong`
 		});
 	}
 }
@@ -117,18 +109,12 @@ async function getMe(
 		});
 
 		reply.code(200).send({
-			meta: {
-				code: 200,
-				message: `Successfully fetched`
-			},
+			message: `Successfully fetched`,
 			data: user
 		});
 	} catch(e) {
 		reply.code(400).send({
-			meta: {
-				code: 400,
-				message: `Something went wrong`
-			}
+			message: `Something went wrong`
 		});
 	}
 }
@@ -185,6 +171,9 @@ async function updateMe(
 		},
 		where: {
 			id
+		},
+		include: {
+			assets: true
 		}
 	});
 
@@ -200,11 +189,8 @@ async function updateMe(
 	}
 
 	reply.code(200).send({
-		meta: {
-			code: 202,
-			message: `Updated`,
-			updateRes
-		}
+		message: `Updated`,
+		data: updateRes
 	});
 }
 
@@ -222,10 +208,7 @@ async function login(
 
 	if(!user) {
 		return reply.code(400).send({
-			meta: {
-				code: 400,
-				message: `Invalid login or password`
-			}
+			message: `Invalid login or password`
 		});
 	}
 
@@ -238,10 +221,7 @@ async function login(
 	if(correctPassword) {
 		const { password, salt, ...rest } = user;
 		reply.code(200).send({
-			meta: {
-				code: 200,
-				message: `Authenticated`
-			},
+			message: `Authenticated`,
 			data: {
 				accessToken: server.jwt.sign(rest)
 			}
@@ -249,10 +229,7 @@ async function login(
 	}
 
 	reply.code(400).send({
-		meta: {
-			code: 400,
-			message: `Invalid login or password`
-		}
+		message: `Invalid login or password`
 	});
 }
 

@@ -17,18 +17,12 @@ async function getAllBooks(request: FastifyRequest, reply: FastifyReply) {
 		const response = await prisma.book.findMany();
 
 		reply.code(200).send({
-			meta: {
-				code: 200
-			},
 			data: response
 		});
 	} catch(error) {
 		console.log(error);
 		reply.code(400).send({
-			meta: {
-				code: 400,
-				message: `Something went wrong`
-			}
+			message: `Something went wrong`
 		});
 	}
 }
@@ -42,7 +36,7 @@ async function insertBook(
 	const { id } = await request.jwtVerify() as DecodedData;
 
 	try {
-		await prisma.book.create({
+		const newBook = await prisma.book.create({
 			data: {
 				title,
 				release: new Date(release),
@@ -52,18 +46,13 @@ async function insertBook(
 		});
 
 		reply.code(201).send({
-			meta: {
-				code: 201,
-				message: `Created`
-			}
+			message: `Created`,
+			data: newBook
 		});
 	} catch(error) {
 		console.log(error);
 		reply.code(400).send({
-			meta: {
-				code: 400,
-				message: `Something went wrong`
-			}
+			message: `Something went wrong`
 		});
 	}
 }
@@ -82,19 +71,13 @@ async function deleteBookById(
 		});
 
 		reply.code(200).send({
-			meta: {
-				code: 200,
-				message: `Deleted`
-			}
+			message: `Deleted`
 		});
 	} catch(e) {
 		console.log(e);
 		const error = e as any;
 		reply.code(400).send({
-			meta: {
-				code: 400,
-				message: error?.meta?.cause || e
-			}
+			message: error?.meta?.cause || e
 		});
 	}
 }
@@ -106,7 +89,7 @@ async function updateBook(
 	const bookId = request.body.id;
 
 	try {
-		await prisma.book.update({
+		const updatedBook = await prisma.book.update({
 			where: {
 				id: bookId
 			},
@@ -114,20 +97,15 @@ async function updateBook(
 		});
 
 		reply.code(200).send({
-			meta: {
-				code: 200,
-				message: `Updated`
-			}
+			message: `Updated`,
+			data: updatedBook
 		});
 	} catch(e: unknown) {
 		const error = e as any;
 		console.log(error);
 
 		reply.code(400).send({
-			meta: {
-				code: 400,
-				message: error?.meta?.cause || e
-			}
+			message: error?.meta?.cause || e
 		});
 	}
 }

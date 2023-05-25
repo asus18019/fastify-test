@@ -1,5 +1,4 @@
 import { FastifySchema } from 'fastify';
-import { metaSchema } from '../user/schema';
 
 const bookResponseSchema = {
 	type: 'object',
@@ -17,7 +16,6 @@ export const getBooksSchemas: FastifySchema = {
 		200: {
 			type: 'object',
 			properties: {
-				...metaSchema,
 				data: {
 					type: 'array',
 					items: bookResponseSchema
@@ -41,7 +39,8 @@ export const insertBookSchemas: FastifySchema = {
 		201: {
 			type: 'object',
 			properties: {
-				...metaSchema
+				message: { type: 'string' },
+				data: bookResponseSchema
 			}
 		}
 	}
@@ -58,13 +57,13 @@ export const deleteBookSchemas: FastifySchema = {
 		200: {
 			type: 'object',
 			properties: {
-				...metaSchema
+				message: { type: 'string' }
 			}
 		},
 		404: {
 			type: 'object',
 			properties: {
-				...metaSchema
+				message: { type: 'string' }
 			}
 		}
 	}
@@ -86,10 +85,8 @@ export const updateBookSchemas: FastifySchema = {
 	},
 	response: {
 		200: {
-			type: 'object',
-			properties: {
-				...metaSchema
-			}
+			message: { type: 'string' },
+			data: bookResponseSchema
 		}
 	}
 };

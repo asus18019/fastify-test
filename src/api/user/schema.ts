@@ -1,14 +1,16 @@
 import { FastifySchema } from 'fastify';
 
-export const metaSchema = {
-	meta: {
-		type: 'object',
-		properties: {
-			code: { type: 'number' },
-			message: { type: 'string' }
-		}
+const userResponseSchema = {
+	type: 'object',
+	properties: {
+		id: { type: 'number' },
+		fullname: { type: 'string' },
+		dob: { type: 'string' },
+		country: { type: 'string' },
+		login: { type: 'string' },
+		image_id: { type: ['number', 'null'] }
 	}
-};
+}
 
 export const insertUserSchemas: FastifySchema = {
 	body: {
@@ -26,44 +28,47 @@ export const insertUserSchemas: FastifySchema = {
 		201: {
 			type: 'object',
 			properties: {
-				...metaSchema
+				message: { type: 'string' },
+				data: userResponseSchema
 			}
 		},
 		409: {
 			type: 'object',
 			properties: {
-				...metaSchema
+				message: { type: 'string' }
 			}
 		}
 	}
 };
+
+const detailedUserInfo = {
+	type: 'object',
+	properties: {
+		id: { type: 'number' },
+		fullname: { type: 'string' },
+		dob: { type: 'string' },
+		country: { type: 'string' },
+		login: { type: 'string' },
+		assets: {
+			type: ['object', 'null'],
+			properties: {
+				asset_id: { type: 'string' },
+				format: { type: 'string' },
+				resource_type: { type: 'string' },
+				created_at: { type: 'string' },
+				url: { type: 'string' }
+			}
+		}
+	}
+}
 
 export const getMeSchemas: FastifySchema = {
 	response: {
 		200: {
 			type: 'object',
 			properties: {
-				...metaSchema,
-				data: {
-					type: 'object',
-					properties: {
-						id: { type: 'number' },
-						fullname: { type: 'string' },
-						dob: { type: 'string' },
-						country: { type: 'string' },
-						login: { type: 'string' },
-						assets: {
-							type: ['object', 'null'],
-							properties: {
-								asset_id: { type: 'string' },
-								format: { type: 'string' },
-								resource_type: { type: 'string' },
-								created_at: { type: 'string' },
-								url: { type: 'string' }
-							}
-						}
-					}
-				}
+				message: { type: 'string' },
+				data: detailedUserInfo
 			}
 		}
 	}
@@ -78,6 +83,15 @@ export const updateMeSchemas: FastifySchema = {
 			fullname: { type: 'string' },
 			country: { type: 'string' },
 			dob: { type: 'string' }
+		}
+	},
+	response: {
+		200: {
+			type: 'object',
+			properties: {
+				message: { type: 'string' },
+				data: detailedUserInfo
+			}
 		}
 	}
 };
@@ -95,7 +109,7 @@ export const authorizeUserSchemas: FastifySchema = {
 		200: {
 			type: 'object',
 			properties: {
-				...metaSchema,
+				message: { type: 'string' },
 				data: {
 					accessToken: { type: 'string' }
 				}

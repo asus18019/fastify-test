@@ -1,5 +1,5 @@
 import { FastifyPluginCallback } from 'fastify';
-import { authorizeUserSchemas, getMeSchemas } from './schema';
+import { authorizeUserSchemas, getMeSchemas, insertUserSchemas, updateMeSchemas } from './schema';
 import multer from 'fastify-multer';
 
 const userController = require('./controller');
@@ -26,7 +26,7 @@ const router: FastifyPluginCallback = (fastify, opts, done) => {
 		{ Body: InsertUserBody }
 	>(
 		'/user',
-		{ preHandler: upload.single('image') },
+		{ preHandler: upload.single('image'), schema: { response: insertUserSchemas.response } },
 		userController.insertUser
 	);
 
@@ -48,7 +48,7 @@ const router: FastifyPluginCallback = (fastify, opts, done) => {
 		{ Body: UpdateUserBody }
 	>(
 		'/me',
-		{ preHandler: [upload.single('image'), fastify.auth] },
+		{ preHandler: [upload.single('image'), fastify.auth], schema: { response: updateMeSchemas.response } },
 		userController.updateMe
 	);
 
